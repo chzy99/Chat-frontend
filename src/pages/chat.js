@@ -16,11 +16,17 @@ export default function Chat() {
 
     let params = useParams();
 
+    const connect = () => {
+        if (stompClient == null) {
+            let sock = new SockJS("http://localhost:8080/ws");
+            stompClient = over(sock);
+            stompClient.connect({}, onConnected, onFail);
+        }
+    }
+
     useEffect(() => {
-        // Socket connection
-        let sock = new SockJS("http://localhost:8080/ws");
-        stompClient = over(sock);
-        stompClient.connect({}, onConnected, onFail);
+        console.log("DEBUG: useEffect called!");
+        connect();
     }, []);
 
     const [userData, setUserData] = useState(
@@ -69,7 +75,6 @@ export default function Chat() {
 
         if (message.status === "JOIN") {
             globalData.userList.push(message.sender);
-            console.log(message);
             globalData.messages.push(message);
             setGlobalData({...globalData, messages: globalData.messages, userList: globalData.userList});
         } else if (message.status === "LEAVE") {
@@ -77,7 +82,10 @@ export default function Chat() {
             setGlobalData({...globalData, userList: newUsers});
         } else {
             globalData.messages.push(message);
-            setGlobalData({...globalData, messages: globalData.messages});
+            if (!globalData.userList.includes(message.sender)) {
+                globalData.userList.push(message.sender);
+            }
+            setGlobalData({...globalData, messages: globalData.messages, userList: globalData.userList});
         }
     }
 
@@ -106,7 +114,7 @@ export default function Chat() {
                             ...userData,
                             "message": e.target.value,
                         })}} />
-                        <input className="chat-btn" type="submit"></input>
+                        <input className="chat-btn" type="submit" value="Send"></input>
                     </form>
                 </div>
             </div>
